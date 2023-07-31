@@ -1,74 +1,63 @@
-# Copyright 2018 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# [START people_quickstart]
-from __future__ import print_function
-
-import os.path
-
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+import os
+import csv
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+from google.oauth2.credentials import Credentials
 
-# If modifying these scopes, delete the file token.json.
+# Google Contacts API Scope
 SCOPES = ['https://www.googleapis.com/auth/contacts.readonly']
 
-
-def main():
-    """Shows basic usage of the People API.
-    Prints the name of the first 10 connections.
-    """
+def get_authenticated_service():
     creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
+    
+    # Check if token.json file exists and contains valid credentials
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
+    
+    # If no valid credentials found, prompt the user to log in
     if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
+        flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+        creds = flow.run_local_server(port=0)
+        
+        # Save the credentials to a file for future use
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
+    
+    # Build the service using the obtained credentials
+    service = build('people', 'v1', credentials=creds)
+    return service
 
-    try:
-        service = build('people', 'v3', credentials=creds)
+def export_contacts_to_csv(service, filename='contacts.csv'):
+    # Get all connections (contacts)
+    results = service.people().connections().list(resourceName='people/me', pageSize=2000).execute()
+    connections = results.get('connections', [])
 
-        # Call the People API
-        print('List 10 connection names')
-        results = service.people().connections().list(
-            resourceName='people/me',
-            pageSize=10,
-            personFields='names,emailAddresses').execute()
-        connections = results.get('connections', [])
+    # Open CSV file to write
+    with open(filename, 'w', newline='') as csvfile:
+        # CSV writer
+        writer = csv.writer(csvfile)
 
+        # Write header row
+        writer.writerow(['Name', 'Email'])
+
+        # Write contacts to rows
         for person in connections:
             names = person.get('names', [])
             if names:
                 name = names[0].get('displayName')
-                print(name)
-    except HttpError as err:
-        print(err)
+            else:
+                name = ''
 
+            email = person.get('emailAddresses', [{'value': ''}])[0].get('value')
 
-if __name__ == '__main__':
-    main()
-# [END people_quickstart]
+            writer.writerow([name, email])
+
+    print('Contacts exported to', filename)
+
+if __name__ == "__main__":
+    # Authenticate and get the service
+    service = get_authenticated_service()
+    
+    # Export contacts to CSV
+    export_contacts_to_csv(service, filename='contacts.csv')
