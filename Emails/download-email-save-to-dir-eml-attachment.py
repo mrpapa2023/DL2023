@@ -36,13 +36,13 @@ def save_email_as_eml(service, message_id, directory_name):
         email_title = msg['Subject']
         decoded_title = email.header.decode_header(email_title)[0]
         decoded_title_str = decoded_title[0]
-        if decoded_title[1]:
-            email_title = decoded_title_str.decode(decoded_title[1])
-        else:
-            email_title = decoded_title_str
+
+        # Convert to string if it's not already
+        if not isinstance(decoded_title_str, str):
+            decoded_title_str = decoded_title_str.decode()
 
         # Remove any invalid characters from the email title to create a valid file name
-        email_title = ''.join(c for c in email_title if c.isalnum() or c in (' ', '-', '_'))
+        email_title = ''.join(c for c in decoded_title_str if c.isalnum() or c in (' ', '-', '_'))
 
         # Save the email as a .eml file with the title as the file name
         eml_filename = os.path.join(directory_name, f"{email_title}.eml")
@@ -59,6 +59,21 @@ def save_email_as_eml(service, message_id, directory_name):
                     attachment = part.get_payload(decode=True)
                     with open(os.path.join(directory_name, filename), 'wb') as attachment_file:
                         attachment_file.write(attachment)
+
+def get_gmail_messages(service, label_id):
+    messages = []
+    page_token = None
+    while True:
+        try:
+            results = service.users().messages().list(userId='me', labelIds=[label_id], pageToken=page_token).execute()
+            messages.extend(results.get('messages', []))
+            page_token = results.get('nextPageToken')
+            if not page_token:
+                break
+        except HttpError as error:
+            print(f'An error occurred while fetching messages: {error}')
+            break
+    return messages
 
 def main():
     # Step 1: Create a directory called "Gmail"
@@ -89,13 +104,9 @@ def main():
         create_gmail_directory(label_directory)
 
         # Get emails for the label and save them as .eml files
-        try:
-            results = service.users().messages().list(userId='me', labelIds=[label_id]).execute()
-            messages = results.get('messages', [])
-            for message in messages:
-                save_email_as_eml(service, message['id'], label_directory)
-        except HttpError as error:
-            print(f'An error occurred while fetching emails for label {label_name}: {error}')
+        messages = get_gmail_messages(service, label_id)
+        for message in messages:
+            save_email_as_eml(service, message['id'], label_directory)
 
 if __name__ == '__main__':
     main()
