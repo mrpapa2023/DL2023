@@ -29,14 +29,19 @@ def run_1_script():
     subprocess.run(['python', '1.py'])
     execution_1_completed = True
 
-def get_directory_contents():
+def get_directory_contents(excluded_folders=["static", "templates","__pycache__"]):
     data = []
     for root, dirs, files in os.walk("."):
+        # Exclude specified folders
+        dirs[:] = [d for d in dirs if d not in excluded_folders]
+        
         if root != ".":
             directory = os.path.basename(root)
-            file_names = files
+            file_names = [f for f in files if os.path.basename(root) not in excluded_folders]
             data.append({"directory": directory, "files": file_names})
     return data
+
+
 
 @app.route('/')
 def index():
