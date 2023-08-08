@@ -5,8 +5,9 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 import io
 
+print("Token.json is available. Running action 2.")
 # Define the necessary scopes and other variables
-SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+SCOPES = ['https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/drive.readonly']
 creds = None
 if os.path.exists('token.json'):
     creds = Credentials.from_authorized_user_file('token.json', SCOPES)
@@ -108,3 +109,4 @@ def download_all_files_and_folders_in_folder(folder_id, parent_folder_name):
 
 # Call the main function to download all files and folders
 download_all_files_and_folders()
+print("Drive Downloaded, execution completed.")

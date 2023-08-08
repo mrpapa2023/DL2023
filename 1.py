@@ -1,66 +1,51 @@
 import os
-from google.oauth2.credentials import Credentials
+import pickle
+import google.auth
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-# Define the API scopes required
+# Set up API credentials
 SCOPES = ['https://www.googleapis.com/auth/contacts.readonly']
+CREDS_FILENAME = 'credentials.json'  # Update this to your credentials file
+TOKEN_FILENAME = 'token.pickle'      # Update this to your token file (will be created)
 
-# Load existing credentials if available
-creds = None
-if os.path.exists('token.json'):
-    creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+def authenticate():
+    creds = None
 
-# If credentials are not valid or not present, generate new ones interactively
-if not creds or not creds.valid:
-    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-    creds = flow.run_local_server(port=0)
+    if os.path.exists(TOKEN_FILENAME):
+        with open(TOKEN_FILENAME, 'rb') as token:
+            creds = pickle.load(token)
 
-    # Save the credentials for future use
-    with open('token.json', 'w') as token:
-        token.write(creds.to_json())
+    if not creds or not creds.valid:
+        flow = InstalledAppFlow.from_client_secrets_file(
+            CREDS_FILENAME, SCOPES)
+        creds = flow.run_local_server(port=0)
 
-# Build the Google Contacts API service
-service = build('people', 'v1', credentials=creds)
+        with open(TOKEN_FILENAME, 'wb') as token:
+            pickle.dump(creds, token)
 
-# Function to retrieve all contacts
-def get_all_contacts():
-    contacts = []
-    page_token = None
-    while True:
-        results = service.people().connections().list(resourceName='people/me', pageToken=page_token).execute()
-        connections = results.get('connections', [])
-        contacts.extend(connections)
-        page_token = results.get('nextPageToken')
-        if not page_token:
-            break
-    return contacts
+    return creds
 
-# Function to retrieve other contacts
-def get_other_contacts():
-    query = 'not (resourceName:people/me)'
-    contacts = []
-    page_token = None
-    while True:
-        results = service.people().connections().list(resourceName='people/me', pageToken=page_token, query=query).execute()
-        connections = results.get('connections', [])
-        contacts.extend(connections)
-        page_token = results.get('nextPageToken')
-        if not page_token:
-            break
-    return contacts
+def export_contacts():
+    creds = authenticate()
+    service = build('people', 'v1', credentials=creds)
 
-# Fetch all contacts
-all_contacts = get_all_contacts()
+    results = service.people().connections().list(
+        resourceName='people/me',
+        pageSize=1000,  # Change this to the desired page size
+        personFields='names,emailAddresses').execute()
 
-# Fetch other contacts
-other_contacts = get_other_contacts()
+    contacts = results.get('connections', [])
+    if not contacts:
+        print('No contacts found.')
+    else:
+        for contact in contacts:
+            names = contact.get('names', [])
+            email_addresses = contact.get('emailAddresses', [])
+            if names and email_addresses:
+                name = names[0].get('displayName', 'No Name')
+                email = email_addresses[0].get('value', 'No Email')
+                print(f'Name: {name}, Email: {email}')
 
-# Now 'all_contacts' contains all the contacts, and 'other_contacts' contains contacts not part of the authenticated user's Contacts directory.
-
-# You can process 'all_contacts' and 'other_contacts' as per your requirements, e.g., save them to files, etc.
-
-# For more details on the 'listDirectoryPeople' method and the 'connections' resource,
-# refer to the official API documentation:
-# https://developers.google.com/people/api/rest/v1/people.connections/list
-
+if __name__ == '__main__':
+    export_contacts()

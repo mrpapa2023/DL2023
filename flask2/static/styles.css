@@ -1,0 +1,80 @@
+body {
+    font-family: monospace;
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    color: #0f0;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: url("/static/hacker_matrix.gif"); /* Use an absolute path */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+.background {
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 50px auto;
+    max-width: 800px;
+}
+
+.container {
+    text-align: center;
+}
+
+.button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+    margin-top: 20px;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+.table-container {
+    margin-top: 20px;
+}
+
+.responsive-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.responsive-table th,
+.responsive-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+@media screen and (max-width: 600px) {
+    .responsive-table th,
+    .responsive-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .responsive-table th {
+        text-align: center;
+    }
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    background-color: rgb(151, 0, 0);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 18px;
+    z-index: 9999;
+}

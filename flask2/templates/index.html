@@ -1,0 +1,127 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hacker Mode UI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="background">
+        <div class="container">
+            <h1>Hacker Mode UI</h1>
+            <button class="button" id="startButton">Start Download</button>
+        </div>
+        
+        <div class="table-container">
+            <table id="fileTable" class="responsive-table">
+                <thead>
+                    <tr>
+                        <th>Directory</th>
+                        <th>Files</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Table content will be updated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const fileTableBody = document.querySelector('#fileTable tbody');
+
+        startButton.addEventListener('click', async () => {
+            startButton.disabled = true;
+            await startDownload();
+            startButton.disabled = false;
+        });
+
+        async function startDownload() {
+            await fetch('/start_download', { method: 'POST' });
+        }
+
+        let shouldCheckEnd = true;  // Flag to control checking
+
+        async function updateTable() {
+            if (!shouldCheckEnd) {
+                return;  // Stop checking if 'shouldCheckEnd' is false
+            }
+
+            const response = await fetch('/get_directory_contents');
+            const data = await response.json();
+
+            // Clear existing table rows
+            fileTableBody.innerHTML = '';
+
+            // Populate table with data
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                const directoryCell = document.createElement('td');
+                const filesCell = document.createElement('td');
+
+                directoryCell.textContent = item.directory;
+                filesCell.textContent = item.files.join(', ');
+
+                row.appendChild(directoryCell);
+                row.appendChild(filesCell);
+                fileTableBody.appendChild(row);
+            });
+
+            // Check if 'end' message should be shown
+            const responseEnd = await fetch('/check_end');
+            const isEnd = await responseEnd.json();
+
+            if (isEnd) {
+                showEndPopup();
+                shouldCheckEnd = false;  // Stop checking after showing popup
+            }
+        }
+
+        // Show the 'end' popup
+        function showEndPopup() {
+    const popup = document.createElement('div');
+    popup.className = 'popup';
+    popup.textContent = 'End';
+    document.body.appendChild(popup);
+
+    // Prompt for the file name
+    const fileName = prompt('Downloader Done! Enter File Name:');
+
+    if (fileName !== null && fileName.trim() !== '') {
+        createZipFile(fileName);
+    }
+
+    // Remove the popup after a delay
+    setTimeout(() => {
+        popup.remove();
+    }, 200000);
+}
+
+// Create a zip file with the given name
+async function createZipFile(fileName) {
+    const response = await fetch('/create_zip', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileName }),
+    });
+
+    const result = await response.json();
+    if (result.success) {
+        alert('Zip file created successfully.');
+    } else {
+        console.error('Error creating the zip file.');
+    }
+}
+
+
+        // Update table every second
+        setInterval(updateTable, 1000);
+    </script>
+</body>
+</html>

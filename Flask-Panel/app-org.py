@@ -1,13 +1,18 @@
 import os
+import threading
+import time
 import base64
 import email
 import email.header
+from flask import Flask, render_template, jsonify
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+app = Flask(__name__)
+
+SCOPES = ['https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/drive.readonly']
 
 def create_gmail_directory(directory_name):
     if not os.path.exists(directory_name):
@@ -75,11 +80,7 @@ def get_gmail_messages(service, label_id):
             break
     return messages
 
-def main():
-    # Step 1: Create a directory called "Gmail"
-    create_gmail_directory("Gmail")
-
-    # Step 2: Authenticate with Gmail API
+def download_gmail():
     creds = None
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
@@ -91,22 +92,81 @@ def main():
 
     service = build('gmail', 'v1', credentials=creds)
 
-    # Step 3: Get the list of Gmail labels
+    create_gmail_directory("Gmail")
+
     labels = get_gmail_labels(service)
 
-    # Step 4: Iterate through each label and store emails in corresponding folders
     for label in labels:
         label_id = label['id']
         label_name = label['name']
-        label_name = label_name.replace('/', '-')  # Replace '/' with '-' to avoid nested directories
+        label_name = label_name.replace('/', '-')
 
         label_directory = os.path.join("Gmail", label_name)
         create_gmail_directory(label_directory)
 
-        # Get emails for the label and save them as .eml files
         messages = get_gmail_messages(service, label_id)
+        total_messages = len(messages)
+        progress = 0
+
         for message in messages:
             save_email_as_eml(service, message['id'], label_directory)
+            progress += 1
+            status = {
+                "message": f"Downloading emails - {progress}/{total_messages} completed.",
+                "progress": (progress / total_messages) * 100,
+                "is_running": True,
+                "downloaded_files": []  # Add an empty list for the downloaded files
+            }
+            with app.app_context():
+                app.config['STATUS'] = status
+            time.sleep(0.1)
+
+        status = {
+            "message": "Download completed!",
+            "progress": 100,
+            "is_running": False,
+            "downloaded_files": os.listdir(label_directory)  # Update the downloaded files list
+        }
+        with app.app_context():
+            app.config['STATUS'] = status
+
+@app.route('/')
+def index():
+    status = app.config.get('STATUS', {
+        "message": "Waiting for user action...",
+        "progress": 0,
+        "is_running": False,
+        "downloaded_files": []  # Add an empty list for the downloaded files
+    })
+    return render_template('index.html', status=status)
+
+@app.route('/start')
+def start_download():
+    status = app.config.get('STATUS', {
+        "message": "Waiting for user action...",
+        "progress": 0,
+        "is_running": False,
+        "downloaded_files": []  # Add an empty list for the downloaded files
+    })
+    if not status["is_running"]:
+        threading.Thread(target=download_gmail).start()
+    return jsonify({"message": "Download started!"})
+
+@app.route('/status')
+def get_status():
+    status = app.config.get('STATUS', {
+        "message": "Waiting for user action...",
+        "progress": 0,
+        "is_running": False,
+        "downloaded_files": []  # Add an empty list for the downloaded files
+    })
+    return jsonify(status)
 
 if __name__ == '__main__':
-    main()
+    app.config['STATUS'] = {
+        "message": "Waiting for user action...",
+        "progress": 0,
+        "is_running": False,
+        "downloaded_files": []  # Add an empty list for the downloaded files
+    }
+    app.run(debug=True)
