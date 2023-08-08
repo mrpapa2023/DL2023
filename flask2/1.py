@@ -44,6 +44,9 @@ def save_email_as_eml(service, message_id, directory_name):
         # Remove any invalid characters from the email title to create a valid file name
         email_title = ''.join(c for c in decoded_title_str if c.isalnum() or c in (' ', '-', '_'))
 
+        # Print the email number and title
+        # print(f"Downloading email {message_id}: {email_title}")
+
         # Save the email as a .eml file with the title as the file name
         eml_filename = os.path.join(directory_name, f"{email_title}.eml")
         with open(eml_filename, 'wb') as eml_file:
@@ -61,19 +64,21 @@ def save_email_as_eml(service, message_id, directory_name):
                         attachment_file.write(attachment)
 
 def get_gmail_messages(service, label_id):
+    total_messages = 0  # Initialize a counter for total messages
     messages = []
     page_token = None
     while True:
         try:
             results = service.users().messages().list(userId='me', labelIds=[label_id], pageToken=page_token).execute()
             messages.extend(results.get('messages', []))
+            total_messages += len(results.get('messages', []))  # Increment the counter
             page_token = results.get('nextPageToken')
             if not page_token:
                 break
         except HttpError as error:
             print(f'An error occurred while fetching messages: {error}')
             break
-    return messages
+    return total_messages, messages
 
 def main():
     # Step 1: Create a directory called "Gmail"
@@ -95,6 +100,8 @@ def main():
     labels = get_gmail_labels(service)
 
     # Step 4: Iterate through each label and store emails in corresponding folders
+    total_emails = 0  # Initialize a counter for total emails
+
     for label in labels:
         label_id = label['id']
         label_name = label['name']
@@ -104,9 +111,14 @@ def main():
         create_gmail_directory(label_directory)
 
         # Get emails for the label and save them as .eml files
-        messages = get_gmail_messages(service, label_id)
-        for message in messages:
+        total_label_emails, messages = get_gmail_messages(service, label_id)
+        total_emails += total_label_emails  # Update the total count
+
+        for index, message in enumerate(messages, start=1):
             save_email_as_eml(service, message['id'], label_directory)
+            print(f"Downloaded {index}/{len(messages)} emails in '{label_name}' label.")
+
+    print(f"Total number of emails downloaded: {total_emails}")  # Print the total count
 
 if __name__ == '__main__':
     main()
