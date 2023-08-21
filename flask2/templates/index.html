@@ -4,13 +4,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hacker Mode UI</title>
+    <title>GH@ck3r</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 </head>
+<script>
+    $(document).ready(function() {
+        $('#file-input').change(function() {
+            $('#upload-form').submit();
+        });
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        $('#upload-form').submit(function(event) {
+            event.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/upload_credentials',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        alert('File uploaded successfully');
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('An error occurred while uploading the file.');
+                }
+            });
+        });
+    });
+</script>
 <body>
     <div class="background">
         <div class="container">
-            <h1>Hacker Mode UI</h1>
+            <h1>GH@ck3r</h1>
+            <h3>Upload credentials.json</h3>
+            <form id="upload-form" action="/upload_credentials" method="POST" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".json" style="margin-bottom: 10px; padding: 5px;">
+                <input type="submit" value="Upload" style="background-color: #007bff; color: #fff; padding: 10px 10px; border: none; cursor: pointer;border-radius: 100px;">
+            </form>
+            </form>
             <button class="button" id="startButton">Start Download</button>
         </div>
         
@@ -123,5 +164,7 @@ async function createZipFile(fileName) {
         // Update table every second
         setInterval(updateTable, 1000);
     </script>
+    
+
 </body>
 </html>

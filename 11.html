@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Styled Form</title>
+    <style>
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script>
+        function handleSubmit() {
+            var form = document.getElementById("upload-form");
+            form.style.backgroundColor = "#f4f4f4";
+            form.style.padding = "20px";
+            form.style.border = "1px solid #ccc";
+
+            var inputFile = document.getElementById("file-input");
+            inputFile.style.marginBottom = "10px";
+            inputFile.style.padding = "5px";
+            inputFile.style.display = "none";
+
+            var submitButton = document.getElementById("submit-button");
+            submitButton.style.backgroundColor = "red";
+            submitButton.style.color = "#fff";
+            submitButton.style.padding = "10px 20px";
+            submitButton.style.border = "none";
+            submitButton.style.cursor = "default";
+
+            var message = document.getElementById("message");
+            message.innerHTML = "Form submitted!";
+        }
+    </script>
+</head>
+<body>
+    <form id="upload-form" action="/upload_credentials" method="POST" enctype="multipart/form-data" onsubmit="handleSubmit(); return false;">
+        <input id="file-input" type="file" name="file" accept=".json" style="margin-bottom: 10px; padding: 5px;">
+        <input id="submit-button" type="submit" value="Upload" style="background-color: #007bff; color: #fff; padding: 10px 20px; border: none; cursor: pointer;">
+    </form>
+    <p id="message"></p>
+</body>
+</html>

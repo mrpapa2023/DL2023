@@ -28,10 +28,10 @@ def get_authenticated_service():
         return build(API_SERVICE_NAME, API_VERSION, credentials=creds)
 
 # Export contacts
-def export_contacts():
+def export_contacts(user_id='people/me'):
     service = get_authenticated_service()
     results = service.people().connections().list(
-        resourceName='people/me',
+        resourceName=user_id,
         pageSize=1000,
         personFields='names,emailAddresses,phoneNumbers'
     ).execute()
@@ -50,4 +50,7 @@ def export_contacts():
 
 # Main function
 if __name__ == '__main__':
-    export_contacts()
+    # Use 'people/me' for authenticated user's contacts
+    # Use 'people/{user_id}' for other users' contacts
+    user_id = 'people/other_user_id'
+    export_contacts(user_id)

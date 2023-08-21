@@ -5,6 +5,7 @@ import threading
 import time
 import zipfile
 import json
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.static_folder = 'static'
@@ -13,6 +14,31 @@ token_available = False
 execution_1_completed = False
 execution_2_completed = False
 
+app.debug = True
+UPLOAD_FOLDER = './'
+ALLOWED_EXTENSIONS = {'json'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload_credentials', methods=['POST'])
+def upload_credentials():
+    if 'file' not in request.files:
+        return jsonify({"success": False, "message": "No file part"})
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"success": False, "message": "No selected file"})
+
+    if file and allowed_file(file.filename):
+        filename = 'credentials.json'  # Save as credentials.json
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return jsonify({"success": True, "message": "File uploaded successfully"})
+    else:
+        return jsonify({"success": False, "message": "Invalid file format"})
+    
 def check_token():
     global token_available, execution_2_completed
     while True:
@@ -101,7 +127,7 @@ def create_zip():
             # Add contents of Gmail and GDrive folders to the zip file
             add_folder_to_zip(zipf, 'Gmail', 'Gmail')
             add_folder_to_zip(zipf, 'GDrive', 'GDrive')
-
+            
         return jsonify({"success": True, "message": "Zip file created successfully."})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
