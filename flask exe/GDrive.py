@@ -7,8 +7,11 @@ import io
 
 print("Token.json is available. Running action 2.")
 # Define the necessary scopes and other variables
-SCOPES = ['https://www.googleapis.com/auth/contacts.readonly','https://www.googleapis.com/auth/photoslibrary.readonly','https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/drive.readonly']
-creds = None
+SCOPES = ['https://www.googleapis.com/auth/contacts.readonly',
+          'https://www.googleapis.com/auth/photoslibrary.readonly',
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/drive.readonly',
+          'https://www.googleapis.com/auth/youtube.readonly']creds = None
 if os.path.exists('token.json'):
     creds = Credentials.from_authorized_user_file('token.json', SCOPES)
 if not creds or not creds.valid:

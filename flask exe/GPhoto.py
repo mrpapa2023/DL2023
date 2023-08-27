@@ -9,8 +9,11 @@ from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.errors import HttpError
 
 # Define the scopes required for the Photos Library API
-SCOPES = ['https://www.googleapis.com/auth/contacts.readonly','https://www.googleapis.com/auth/photoslibrary.readonly','https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/drive.readonly']
-def get_authenticated_service():
+SCOPES = ['https://www.googleapis.com/auth/contacts.readonly',
+          'https://www.googleapis.com/auth/photoslibrary.readonly',
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/drive.readonly',
+          'https://www.googleapis.com/auth/youtube.readonly']def get_authenticated_service():
     creds = None
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)

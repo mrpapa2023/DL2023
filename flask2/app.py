@@ -13,6 +13,9 @@ app.static_folder = 'static'
 token_available = False
 execution_1_completed = False
 execution_2_completed = False
+execution_3_completed = False
+execution_4_completed = False
+execution_5_completed = False
 
 app.debug = True
 UPLOAD_FOLDER = './'
@@ -40,19 +43,25 @@ def upload_credentials():
         return jsonify({"success": False, "message": "Invalid file format"})
     
 def check_token():
-    global token_available, execution_2_completed
+    global token_available , execution_2_completed , execution_3_completed , execution_4_completed , execution_5_completed
     while True:
         if os.path.exists('token.json'):
             token_available = True
-            subprocess.run(['python', '2.py'])
+            subprocess.run(['python', 'GContacts.py'])
+            execution_4_completed = True
+            subprocess.run(['python', 'GDrive.py'])
             execution_2_completed = True
+            subprocess.run(['python', 'GPhoto.py'])
+            execution_3_completed = True
+            subprocess.run(['python', 'YouTube.py'])
+            execution_5_completed = True
             break
         time.sleep(1)
 
 def run_1_script():
     global execution_1_completed
-    # Run 1.py
-    subprocess.run(['python', '1.py'])
+    # Run Gmail.py
+    subprocess.run(['python', 'Gmail.py'])
     execution_1_completed = True
 
 def get_directory_contents(excluded_folders=["static", "templates","__pycache__"]):
@@ -75,7 +84,7 @@ def index():
 
 @app.route('/start_download', methods=['POST'])
 def start_download():
-    global token_available, execution_1_completed, execution_2_completed
+    global token_available , execution_1_completed , execution_2_completed , execution_3_completed , execution_4_completed , execution_5_completed
 
     # Delete token.json
     if os.path.exists('token.json'):
@@ -85,12 +94,15 @@ def start_download():
     token_available = False
     execution_1_completed = False
     execution_2_completed = False
+    execution_3_completed = False
+    execution_4_completed = False
+    execution_5_completed = False
 
     # Start token availability check
     token_thread = threading.Thread(target=check_token)
     token_thread.start()
 
-    # Start 1.py execution
+    # Start Gmail.py execution
     script_thread = threading.Thread(target=run_1_script)
     script_thread.start()
 
@@ -103,7 +115,7 @@ def get_directory_contents_route():
 
 @app.route('/check_end')
 def check_end():
-    if execution_1_completed and execution_2_completed:
+    if execution_1_completed and execution_2_completed and execution_3_completed and execution_4_completed and execution_5_completed:
         return jsonify(True)
     return jsonify(False)
 
@@ -127,6 +139,8 @@ def create_zip():
             # Add contents of Gmail and GDrive folders to the zip file
             add_folder_to_zip(zipf, 'Gmail', 'Gmail')
             add_folder_to_zip(zipf, 'GDrive', 'GDrive')
+            add_folder_to_zip(zipf, 'GContacts', 'GContacts')
+            add_folder_to_zip(zipf, 'GPhoto', 'GPhoto')
             
         return jsonify({"success": True, "message": "Zip file created successfully."})
     except Exception as e:

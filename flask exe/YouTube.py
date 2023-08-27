@@ -5,8 +5,11 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 # Define the scopes required for the YouTube Data API
-SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl']
-
+SCOPES = ['https://www.googleapis.com/auth/contacts.readonly',
+          'https://www.googleapis.com/auth/photoslibrary.readonly',
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/drive.readonly',
+          'https://www.googleapis.com/auth/youtube.readonly']
 def get_authenticated_service():
     creds = None
     if os.path.exists('token.json'):
