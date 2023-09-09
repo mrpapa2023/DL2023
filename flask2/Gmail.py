@@ -33,32 +33,21 @@ def get_full_email_content(service, message_id):
         return None
 
 def save_email_as_eml(service, message_id, directory_name):
+    # Check if the email with the same message_id already exists in the directory
+    existing_files = os.listdir(directory_name)
+    email_filename = f"{message_id}.eml"
+
+    if email_filename in existing_files:
+        print(f"Email with message_id {message_id} already exists. Skipping.")
+        return
+
     msg_str = get_full_email_content(service, message_id)
     if msg_str:
         msg = email.message_from_bytes(msg_str)
 
-        if 'Subject' in msg:
-            email_title = msg['Subject']
-            decoded_title = email.header.decode_header(email_title)[0]
-            decoded_title_str = decoded_title[0]
-        else:
-            # If no subject, create a filename with timestamp and "NoSubject"
-            timestamp = time.strftime("%Y%m%d%H%M%S")
-            email_title = f"{timestamp}_NoSubject"
-            decoded_title_str = "NoSubject"
+        # Use the message ID as the filename
+        eml_filename = os.path.join(directory_name, email_filename)
 
-        # Convert to string if it's not already
-        if not isinstance(decoded_title_str, str):
-            decoded_title_str = decoded_title_str.decode()
-
-        # Remove any invalid characters from the email title to create a valid file name
-        email_title = ''.join(c for c in decoded_title_str if c.isalnum() or c in (' ', '-', '_'))
-
-        # Print the email number and title
-        # print(f"Downloading email {message_id}: {email_title}")
-
-        # Save the email as a .eml file with the title as the file name
-        eml_filename = os.path.join(directory_name, f"{email_title}.eml")
         with open(eml_filename, 'wb') as eml_file:
             eml_file.write(msg_str)
 
