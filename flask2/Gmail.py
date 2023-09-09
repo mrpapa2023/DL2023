@@ -8,6 +8,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import time
 
+MAX_RETRIES = 5
+RETRY_DELAY_SECONDS = 10
 
 SCOPES = ['https://www.googleapis.com/auth/contacts.readonly',
           'https://www.googleapis.com/auth/photoslibrary.readonly',
@@ -24,13 +26,19 @@ def get_gmail_labels(service):
     return labels
 
 def get_full_email_content(service, message_id):
-    try:
-        message = service.users().messages().get(userId='me', id=message_id, format='raw').execute()
-        msg_str = base64.urlsafe_b64decode(message['raw'].encode('ASCII'))
-        return msg_str
-    except HttpError as error:
-        print(f'An error occurred: {error}')
-        return None
+    retries = 0
+    while retries < MAX_RETRIES:
+        try:
+            message = service.users().messages().get(userId='me', id=message_id, format='raw').execute()
+            msg_str = base64.urlsafe_b64decode(message['raw'].encode('ASCII'))
+            return msg_str
+        except HttpError as error:
+            print(f'An error occurred: {error}')
+            retries += 1
+            if retries < MAX_RETRIES:
+                print(f'Retrying in {RETRY_DELAY_SECONDS} seconds...')
+                time.sleep(RETRY_DELAY_SECONDS)
+    return None
 
 def save_email_as_eml(service, message_id, directory_name):
     # Check if the email with the same message_id already exists in the directory
